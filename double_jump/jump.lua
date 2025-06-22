@@ -1,11 +1,15 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Variáveis de controle
+-- Referência à animação original
+local frontFlipAnim = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Animations"):WaitForChild("front_flip")
+
+-- Estado do pulo duplo
+local doubleJumpEnabled = true
 local canDoubleJump = false
 local hasDoubleJumped = false
-local doubleJumpEnabled = true
 
 -- GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
@@ -32,43 +36,63 @@ toggleButton.MouseButton1Click:Connect(function()
 	toggleButton.Text = "Double Jump: " .. (doubleJumpEnabled and "ON" or "OFF")
 end)
 
--- Função pra pegar o Humanoid
+-- Função para pegar Humanoid
 local function getHumanoid()
 	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 	return char:WaitForChild("Humanoid")
 end
 
--- Força do segundo pulo
+-- Função para executar o pulo duplo
 local function doDoubleJump()
 	if not doubleJumpEnabled then return end
 
-	local humanoid = getHumanoid()
-	local hrp = humanoid.Parent:FindFirstChild("HumanoidRootPart")
-	if hrp then
-		hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
+	local character = LocalPlayer.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+
+	if humanoid then
+		-- Pulo nativo (altura igual ao do jogo)
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+
+		-- Tocar animação original
+		if animator and frontFlipAnim then
+			local track = animator:LoadAnimation(frontFlipAnim)
+			track:Play()
+		end
 	end
 end
 
--- Entrada de tecla
+-- Configura os eventos de estado para controlar o segundo pulo
+local function setupDoubleJump()
+	local humanoid = getHumanoid()
+
+	humanoid.StateChanged:Connect(function(_, newState)
+		if newState == Enum.HumanoidStateType.Freefall then
+			canDoubleJump = true
+		elseif newState == Enum.HumanoidStateType.Landed then
+			canDoubleJump = false
+			hasDoubleJumped = false
+		end
+	end)
+end
+
+-- Reaplica quando o personagem renasce
+LocalPlayer.CharacterAdded:Connect(function()
+	task.wait(1) -- garante que humanoid e animator carregaram
+	setupDoubleJump()
+end)
+
+-- Aplica inicialmente
+setupDoubleJump()
+
+-- Entrada do teclado para acionar o segundo pulo
 UserInputService.InputBegan:Connect(function(input, isProcessed)
 	if isProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
 	if input.KeyCode == Enum.KeyCode.Space then
 		local humanoid = getHumanoid()
-		local state = humanoid:GetState()
-
-		if state == Enum.HumanoidStateType.Freefall and canDoubleJump and not hasDoubleJumped then
+		if humanoid:GetState() == Enum.HumanoidStateType.Freefall and canDoubleJump and not hasDoubleJumped then
 			hasDoubleJumped = true
 			doDoubleJump()
 		end
-	end
-end)
-
--- Monitora estado do Humanoid
-getHumanoid().StateChanged:Connect(function(_, newState)
-	if newState == Enum.HumanoidStateType.Freefall then
-		canDoubleJump = true
-	elseif newState == Enum.HumanoidStateType.Landed then
-		canDoubleJump = false
-		hasDoubleJumped = false
 	end
 end)
