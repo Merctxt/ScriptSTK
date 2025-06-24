@@ -35,23 +35,10 @@ MinimizeBtn.TextSize = 20
 MinimizeBtn.Font = Enum.Font.GothamBold
 MinimizeBtn.BorderSizePixel = 0
 
--- Adiciona cantos arredondados ao MainFrame
-local mainCorner = Instance.new("UICorner", MainFrame)
-mainCorner.CornerRadius = UDim.new(0, 12)
-
 local ContentFrame = Instance.new("Frame", MainFrame)
-ContentFrame.Size = UDim2.new(0, 180, 1, -40)
+ContentFrame.Size = UDim2.new(1, -20, 1, -40)
 ContentFrame.Position = UDim2.new(0, 10, 0, 35)
 ContentFrame.BackgroundTransparency = 1
-
-local ESPFrame = Instance.new("Frame", MainFrame)
-ESPFrame.Size = UDim2.new(0, 180, 1, -40)
-ESPFrame.Position = UDim2.new(0, 190, 0, 35)
-ESPFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-ESPFrame.BorderSizePixel = 0
-ESPFrame.BackgroundTransparency = 0
-local espFrameCorner = Instance.new("UICorner", ESPFrame)
-espFrameCorner.CornerRadius = UDim.new(0, 12)
 
 local toggles = {
     {var = "AntiAFK", label = "Anti-AFK", color = Color3.fromRGB(50, 150, 50)},
@@ -61,25 +48,23 @@ local toggles = {
     {var = "DoubleJump", label = "Double Jump", color = Color3.fromRGB(50, 150, 150)}
 }
 
-_G.AntiAFK = false
+_G.AntiAFK = true
 _G.AutoLoot = false
-_G.AutoExit = false
-_G.AutoSave = false
-_G.DoubleJump = false
+_G.AutoExit = true
+_G.AutoSave = true
+_G.DoubleJump = true
 
 local yOffset = 0
 for _, t in ipairs(toggles) do
     local btn = Instance.new("TextButton", ContentFrame)
-    btn.Size = UDim2.new(1, -10, 0, 35)
-    btn.Position = UDim2.new(0, 5, 0, yOffset)
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Position = UDim2.new(0, 0, 0, yOffset)
     btn.BackgroundColor3 = t.color
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 15
     btn.Font = Enum.Font.GothamBold
     btn.BorderSizePixel = 0
     btn.Text = t.label .. ": " .. (_G[t.var] and "ON" or "OFF")
-    local btnCorner = Instance.new("UICorner", btn)
-    btnCorner.CornerRadius = UDim.new(0, 8)
     btn.MouseButton1Click:Connect(function()
         _G[t.var] = not _G[t.var]
         btn.Text = t.label .. ": " .. (_G[t.var] and "ON" or "OFF")
@@ -88,54 +73,11 @@ for _, t in ipairs(toggles) do
     yOffset = yOffset + 40
 end
 
--- ESP toggles na coluna direita
-local espToggles = {
-    Survivors = { text = "ESP Survivors", value = false },
-    Killer = { text = "ESP Killer", value = false },
-    Lobby = { text = "ESP Lobby", value = false },
-    NameESP = { text = "Nome ESP", value = false },
-    BoxESP = { text = "Box ESP", value = false },
-    ShowLives = { text = "ESP Vidas", value = false },
-    ShowLoots = { text = "ESP Loots", value = false }
-}
-_G.ESP = espToggles
-
-local espLabel = Instance.new("TextLabel", ESPFrame)
-espLabel.Size = UDim2.new(1, 0, 0, 28)
-espLabel.Position = UDim2.new(0, 0, 0, 0)
-espLabel.BackgroundTransparency = 1
-espLabel.Text = "ESP Options"
-espLabel.TextColor3 = Color3.fromRGB(180, 180, 255)
-espLabel.TextSize = 15
-espLabel.Font = Enum.Font.GothamBold
-
-local espYOffset = 32
-for name, config in pairs(espToggles) do
-    local btn = Instance.new("TextButton", ESPFrame)
-    btn.Size = UDim2.new(1, -10, 0, 32)
-    btn.Position = UDim2.new(0, 5, 0, espYOffset)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
-    btn.Font = Enum.Font.GothamBold
-    btn.BorderSizePixel = 0
-    btn.Text = config.text .. ": " .. (config.value and "ON" or "OFF")
-    local btnCorner = Instance.new("UICorner", btn)
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btn.MouseButton1Click:Connect(function()
-        config.value = not config.value
-        btn.Text = config.text .. ": " .. (config.value and "ON" or "OFF")
-        btn.BackgroundColor3 = config.value and Color3.fromRGB(50, 50, 80) or Color3.fromRGB(40, 40, 40)
-    end)
-    espYOffset = espYOffset + 36
-end
-
 local minimized = false
 MinimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     ContentFrame.Visible = not minimized
-    ESPFrame.Visible = not minimized
-    MainFrame.Size = minimized and UDim2.new(0, 380, 0, 30) or UDim2.new(0, 380, 0, 320)
+    MainFrame.Size = minimized and UDim2.new(0, 260, 0, 30) or UDim2.new(0, 260, 0, 320)
 end)
 
 -- Anti-AFK Script
@@ -293,16 +235,6 @@ end
 
 local function teleportTo(gateway)
     if not _G.AutoExit then return end
-
-    -- Verifica se o player está como Survivor
-    local team = LocalPlayer.Team and LocalPlayer.Team.Name or "N/A"
-    print("[AUTOEXIT] Team atual:", team)
-    if team ~= "Survivor" then
-        print("[AUTOEXIT] Aguardando jogador se tornar Survivor...")
-        return
-    end
-
-
     local hrp = getCharacter():FindFirstChild("HumanoidRootPart")
     if hrp then
         local cf = gateway:GetBoundingBox()
@@ -360,36 +292,14 @@ local function scan()
     end
 end
 
--- Watcher contínuo de mapa (failsafe)
-task.spawn(function()
-	while true do
-		task.wait(5)
-		if _G.AutoExit then
-			scan()
-		end
-	end
-end)
-
--- ChildAdded nos modelos existentes (para detectar quando "Exits" for adicionado depois)
 Workspace.ChildAdded:Connect(function(child)
-	task.wait(1)
-	if child:IsA("Model") then
-		child.ChildAdded:Connect(function(grandchild)
-			if grandchild.Name == "Exits" then
-				print("[AUTOEXIT] Exits adicionado dinamicamente ao mapa:", child.Name)
-				scan()
-			end
-		end)
-
-		-- Caso já venha com Exits
-		if child:FindFirstChild("Exits") then
-			print("[AUTOEXIT] Novo mapa carregado:", child.Name)
-			scan()
-		end
-	end
+    task.wait(1)
+    if child:IsA("Model") and child:FindFirstChild("Exits") then
+        print("[AUTOEXIT] Novo mapa carregado:", child.Name)
+        scan()
+    end
 end)
 
--- Escaneia o mapa atual ao iniciar
 scan()
 
 -- Auto Save Script
@@ -494,175 +404,4 @@ UserInputService.InputBegan:Connect(function(input, isProcessed)
 			doDoubleJump()
 		end
 	end
-end)
-
--- Integra o script ESP do maintest1.lua, usando _G.ESP para os toggles
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
-local valoresloots = {
-    old_slycer = 1000,
-    treasure_chest = 200,
-    gold_bars = 40,
-    pendant = 40,
-    apocalypse_helmet = 20,
-    golden_compass = 20,
-    golden_pocket_watch = 20,
-    trophy = 7,
-    welding_goggles = 7,
-    laptop = 7,
-    smartphone = 7,
-    smartwatch = 7,
-    binoculars = 7,
-    pickaxe = 5,
-    car_engine = 5,
-    busted_boombox = 5,
-    tire = 5,
-    rusty_pipe = 5,
-    rusty_cleaver = 5,
-    shattered_bottle = 2,
-    shattered_shades = 2,
-    green_bottle = 2,
-    gas_can = 2,
-    lighter = 2,
-    broken_bulb = 2,
-    broken_bottle = 2,
-    rusty_lantern = 2,
-}
-
-local function getTeamInfo(plr)
-    local team = plr:GetAttribute("TeamID")
-    if not team then return "Lobby", Color3.fromRGB(200, 200, 200) end
-    if team == "Killer" then
-        return "Killer", Color3.fromRGB(255, 0, 0)
-    elseif team == "Survivor" then
-        return "Survivor", Color3.fromRGB(0, 170, 255)
-    else
-        return "Lobby", Color3.fromRGB(180, 180, 180)
-    end
-end
-
-local function removeESP(plr)
-    if plr.Character then
-        local head = plr.Character:FindFirstChild("Head")
-        if head then
-            local old = head:FindFirstChild("ESP_Text")
-            if old then old:Destroy() end
-        end
-        local box = plr.Character:FindFirstChild("ESP_Box")
-        if box then box:Destroy() end
-    end
-end
-
-local function createESP(plr, color)
-    if not plr.Character or not plr.Character:FindFirstChild("Head") or plr == LocalPlayer then return end
-    local head = plr.Character.Head
-    removeESP(plr)
-    if _G.ESP.NameESP.value then
-        local gui = Instance.new("BillboardGui", head)
-        gui.Name = "ESP_Text"
-        gui.Size = UDim2.new(0, 100, 0, 40)
-        gui.StudsOffset = Vector3.new(0, 2, 0)
-        gui.AlwaysOnTop = true
-        local text = Instance.new("TextLabel", gui)
-        text.Size = UDim2.new(1, 0, 1, 0)
-        text.BackgroundTransparency = 1
-        local lives = _G.ESP.ShowLives.value and plr:GetAttribute("Lives")
-        text.Text = plr.Name .. (lives and (" [" .. tostring(lives) .. "]") or "")
-        text.TextColor3 = color
-        text.TextStrokeTransparency = 0
-        text.TextScaled = true
-    end
-    if _G.ESP.BoxESP.value then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Name = "ESP_Box"
-        box.Adornee = plr.Character
-        box.AlwaysOnTop = true
-        box.ZIndex = 5
-        box.Size = plr.Character:GetExtentsSize()
-        box.Color3 = color
-        box.Transparency = 0.6
-        box.Parent = plr.Character
-    end
-end
-
-RunService.RenderStepped:Connect(function()
-    for _, plr in pairs(Players:GetPlayers()) do
-        local teamName, color = getTeamInfo(plr)
-        local shouldShow =
-            (teamName == "Killer" and _G.ESP.Killer.value)
-            or (teamName == "Survivor" and _G.ESP.Survivors.value)
-            or (teamName == "Lobby" and _G.ESP.Lobby.value)
-        if shouldShow then
-            createESP(plr, color)
-        else
-            removeESP(plr)
-        end
-    end
-end)
-
-local function getLootColor(name)
-    local val = valoresloots[name] or 2
-    if val == 1000 then
-        return Color3.fromRGB(0, 0, 0)
-    elseif val == 200 or val == 40 then
-        return Color3.fromRGB(255, 255, 0)
-    elseif val == 20 then
-        return Color3.fromRGB(128, 0, 128)
-    elseif val == 7 then
-        return Color3.fromRGB(255, 0, 0)
-    elseif val == 5 then
-        return Color3.fromRGB(0, 0, 255)
-    else
-        return Color3.fromRGB(255, 255, 255)
-    end
-end
-
-local function updateLootESP()
-    if not _G.ESP.ShowLoots.value then
-        for _, obj in pairs(workspace:GetChildren()) do
-            local lootSpawns = obj:FindFirstChild("LootSpawns")
-            if lootSpawns then
-                for _, loot in pairs(lootSpawns:GetChildren()) do
-                    local esp = loot:FindFirstChild("ESP_Loot")
-                    if esp then
-                        esp:Destroy()
-                    end
-                end
-            end
-        end
-        return
-    end
-    for _, obj in pairs(workspace:GetChildren()) do
-        local lootSpawns = obj:FindFirstChild("LootSpawns")
-        if lootSpawns then
-            for _, loot in pairs(lootSpawns:GetChildren()) do
-                if loot:IsA("BasePart") and not loot:FindFirstChild("ESP_Loot") then
-                    local lootName = loot:GetAttribute("Loot")
-                    if lootName then
-                        local gui = Instance.new("BillboardGui", loot)
-                        gui.Name = "ESP_Loot"
-                        gui.Size = UDim2.new(0, 100, 0, 30)
-                        gui.StudsOffset = Vector3.new(0, 2, 0)
-                        gui.AlwaysOnTop = true
-                        local label = Instance.new("TextLabel", gui)
-                        label.Size = UDim2.new(1, 0, 1, 0)
-                        label.BackgroundTransparency = 1
-                        label.Text = lootName
-                        label.TextColor3 = getLootColor(lootName)
-                        label.TextStrokeTransparency = 0
-                        label.TextScaled = true
-                    end
-                end
-            end
-        end
-    end
-end
-
-task.spawn(function()
-    while true do
-        task.wait(2)
-        updateLootESP()
-    end
 end)
