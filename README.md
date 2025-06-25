@@ -48,6 +48,20 @@ All features are toggleable via a unified, modern GUI inspired by the best Roblo
 
 <div align="left">
 
+## Quick Start
+
+> **You can use the exploit instantly with this loadstring:**
+>
+> ```lua
+> loadstring(game:HttpGet("https://pastebin.com/raw/6SsijuUm"))()
+> ```
+
+</div>
+
+---
+
+<div align="left">
+
 ## Usage
 
 1. **Requirements:**
