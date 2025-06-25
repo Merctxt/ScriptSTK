@@ -514,46 +514,52 @@ end
 local function setupDoubleJump()
 	local humanoid = getHumanoid()
 
+	-- Estado do personagem (no chão ou no ar)
 	humanoid.StateChanged:Connect(function(_, newState)
 		if newState == Enum.HumanoidStateType.Freefall then
-			-- Libera o segundo pulo quando o jogador está no ar
 			canDoubleJump = true
 		elseif newState == Enum.HumanoidStateType.Landed then
-			-- Reseta flags ao cair no chão
 			canDoubleJump = false
 			hasDoubleJumped = false
 			lastJumpTime = tick()
 		end
 	end)
+
+	-- Suporte MOBILE: detecta pulo manual mesmo que não tenha evento de toque
+	humanoid.Jumping:Connect(function(isJumping)
+		if isJumping and canDoubleJump and not hasDoubleJumped then
+			if tick() - lastJumpTime > 0.2 then
+				hasDoubleJumped = true
+				doDoubleJump()
+			end
+		end
+	end)
 end
 
+-- Inicializa quando o personagem renasce
 LocalPlayer.CharacterAdded:Connect(function()
 	task.wait(1)
 	setupDoubleJump()
 end)
 
+-- Inicial
 setupDoubleJump()
 
--- Suporte PC + Mobile (ambos disparam esse evento)
+-- Suporte PC (teclado / gamepad)
 UserInputService.InputBegan:Connect(function(input, isProcessed)
 	if isProcessed then return end
 
-	local isJump =
-		(input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space)
-		or (input.UserInputType == Enum.UserInputType.Touch)
-
-	if isJump then
+	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
 		local humanoid = getHumanoid()
-
-		-- SEGUNDO PULO
 		if humanoid:GetState() == Enum.HumanoidStateType.Freefall and canDoubleJump and not hasDoubleJumped then
-			if tick() - lastJumpTime > 0.2 then -- evita bugar o primeiro pulo
+			if tick() - lastJumpTime > 0.2 then
 				hasDoubleJumped = true
 				doDoubleJump()
 			end
 		end
 	end
 end)
+
 
 
 -- Integra o script ESP do maintest1.lua, usando _G.ESP para os toggles
