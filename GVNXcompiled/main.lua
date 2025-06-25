@@ -484,8 +484,12 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 local frontFlipAnim = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Animations"):WaitForChild("front_flip")
+
 local canDoubleJump = false
 local hasDoubleJumped = false
+local lastJumpTime = 0
+
+_G.DoubleJump = true
 
 local function getHumanoid()
 	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -494,11 +498,12 @@ end
 
 local function doDoubleJump()
 	if not _G.DoubleJump then return end
-	local character = LocalPlayer.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+
+	local humanoid = getHumanoid()
 	if humanoid then
 		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+
+		local animator = humanoid:FindFirstChildOfClass("Animator")
 		if animator and frontFlipAnim then
 			local track = animator:LoadAnimation(frontFlipAnim)
 			track:Play()
@@ -508,12 +513,16 @@ end
 
 local function setupDoubleJump()
 	local humanoid = getHumanoid()
+
 	humanoid.StateChanged:Connect(function(_, newState)
 		if newState == Enum.HumanoidStateType.Freefall then
+			-- Libera o segundo pulo quando o jogador está no ar
 			canDoubleJump = true
 		elseif newState == Enum.HumanoidStateType.Landed then
+			-- Reseta flags ao cair no chão
 			canDoubleJump = false
 			hasDoubleJumped = false
+			lastJumpTime = tick()
 		end
 	end)
 end
@@ -522,24 +531,30 @@ LocalPlayer.CharacterAdded:Connect(function()
 	task.wait(1)
 	setupDoubleJump()
 end)
+
 setupDoubleJump()
 
+-- Suporte PC + Mobile (ambos disparam esse evento)
 UserInputService.InputBegan:Connect(function(input, isProcessed)
 	if isProcessed then return end
 
-	local humanoid = getHumanoid()
-	local isAirborne = humanoid:GetState() == Enum.HumanoidStateType.Freefall
+	local isJump =
+		(input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space)
+		or (input.UserInputType == Enum.UserInputType.Touch)
 
-	if isAirborne and canDoubleJump and not hasDoubleJumped then
-		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
-			hasDoubleJumped = true
-			doDoubleJump()
-		elseif input.UserInputType == Enum.UserInputType.Touch then
-			hasDoubleJumped = true
-			doDoubleJump()
+	if isJump then
+		local humanoid = getHumanoid()
+
+		-- SEGUNDO PULO
+		if humanoid:GetState() == Enum.HumanoidStateType.Freefall and canDoubleJump and not hasDoubleJumped then
+			if tick() - lastJumpTime > 0.2 then -- evita bugar o primeiro pulo
+				hasDoubleJumped = true
+				doDoubleJump()
+			end
 		end
 	end
 end)
+
 
 -- Integra o script ESP do maintest1.lua, usando _G.ESP para os toggles
 local Players = game:GetService("Players")
