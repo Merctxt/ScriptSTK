@@ -3,7 +3,7 @@ local MainGui = Instance.new("ScreenGui", game.CoreGui)
 MainGui.Name = "GVNX_UnifiedGUI"
 
 local MainFrame = Instance.new("Frame", MainGui)
-MainFrame.Size = UDim2.new(0, 260, 0, 320)
+MainFrame.Size = UDim2.new(0, 380, 0, 320) -- Corrigido para comportar os dois frames
 MainFrame.Position = UDim2.new(0, 20, 0, 20)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
@@ -14,12 +14,15 @@ local TitleBar = Instance.new("Frame", MainFrame)
 TitleBar.Size = UDim2.new(1, 0, 0, 30)
 TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TitleBar.BorderSizePixel = 0
+-- Adiciona cantos arredondados ao TitleBar (todos os cantos, limitação do Roblox)
+local titleBarCorner = Instance.new("UICorner", TitleBar)
+titleBarCorner.CornerRadius = UDim.new(0, 12)
 
 local TitleText = Instance.new("TextLabel", TitleBar)
 TitleText.Size = UDim2.new(1, -60, 1, 0)
 TitleText.Position = UDim2.new(0, 10, 0, 0)
 TitleText.BackgroundTransparency = 1
-TitleText.Text = "GVNX Universal GUI"
+TitleText.Text = "GVNX Survival the Killer - Exploit v1.0"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextSize = 16
 TitleText.Font = Enum.Font.GothamBold
@@ -34,6 +37,9 @@ MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeBtn.TextSize = 20
 MinimizeBtn.Font = Enum.Font.GothamBold
 MinimizeBtn.BorderSizePixel = 0
+-- Deixa o botão de minimizar arredondado
+local minBtnCorner = Instance.new("UICorner", MinimizeBtn)
+minBtnCorner.CornerRadius = UDim.new(0, 8)
 
 -- Adiciona cantos arredondados ao MainFrame
 local mainCorner = Instance.new("UICorner", MainFrame)
@@ -49,7 +55,7 @@ ESPFrame.Size = UDim2.new(0, 180, 1, -40)
 ESPFrame.Position = UDim2.new(0, 190, 0, 35)
 ESPFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ESPFrame.BorderSizePixel = 0
-ESPFrame.BackgroundTransparency = 0
+ESPFrame.BackgroundTransparency = 0 -- Garante sem transparência
 local espFrameCorner = Instance.new("UICorner", ESPFrame)
 espFrameCorner.CornerRadius = UDim.new(0, 12)
 
@@ -67,14 +73,22 @@ _G.AutoExit = false
 _G.AutoSave = false
 _G.DoubleJump = false
 
-local yOffset = 0
+local mainSpacer = Instance.new("TextLabel", ContentFrame)
+mainSpacer.Size = UDim2.new(1, 0, 0, 28)
+mainSpacer.Position = UDim2.new(0, 0, 0, 0)
+mainSpacer.BackgroundTransparency = 1
+mainSpacer.Text = ""
+
+local yOffset = 32
+
+-- local yOffset = 0
 for _, t in ipairs(toggles) do
     local btn = Instance.new("TextButton", ContentFrame)
-    btn.Size = UDim2.new(1, -10, 0, 35)
+    btn.Size = UDim2.new(1, -10, 0, 32)
     btn.Position = UDim2.new(0, 5, 0, yOffset)
-    btn.BackgroundColor3 = t.color
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 15
+    btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
     btn.BorderSizePixel = 0
     btn.Text = t.label .. ": " .. (_G[t.var] and "ON" or "OFF")
@@ -83,9 +97,9 @@ for _, t in ipairs(toggles) do
     btn.MouseButton1Click:Connect(function()
         _G[t.var] = not _G[t.var]
         btn.Text = t.label .. ": " .. (_G[t.var] and "ON" or "OFF")
-        btn.BackgroundColor3 = _G[t.var] and t.color or Color3.fromRGB(40, 40, 40)
+        btn.BackgroundColor3 = _G[t.var] and t.color or Color3.fromRGB(50, 50, 80)
     end)
-    yOffset = yOffset + 40
+    yOffset = yOffset + 36
 end
 
 -- ESP toggles na coluna direita
@@ -136,6 +150,31 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     ContentFrame.Visible = not minimized
     ESPFrame.Visible = not minimized
     MainFrame.Size = minimized and UDim2.new(0, 380, 0, 30) or UDim2.new(0, 380, 0, 320)
+end)
+
+-- Copia o link do Discord ao iniciar e mostra aviso
+local discordLink = "https://discord.gg/ATrBrZXbpK"
+if setclipboard then
+    pcall(function() setclipboard(discordLink) end)
+end
+local discordMsg = Instance.new("TextLabel", MainFrame)
+discordMsg.Size = UDim2.new(1, 0, 0, 22)
+discordMsg.Position = UDim2.new(0, 0, 0, -24)
+discordMsg.BackgroundTransparency = 0.4
+discordMsg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+discordMsg.Text = "Link do Discord copiado! Cole no navegador: discord.gg/ATrBrZXbpK"
+discordMsg.TextColor3 = Color3.fromRGB(180, 180, 255)
+discordMsg.TextSize = 13
+discordMsg.Font = Enum.Font.GothamBold
+discordMsg.BorderSizePixel = 0
+discordMsg.TextStrokeTransparency = 0.7
+discordMsg.TextWrapped = true
+local msgCorner = Instance.new("UICorner", discordMsg)
+msgCorner.CornerRadius = UDim.new(0, 8)
+task.spawn(function()
+    discordMsg.Visible = true
+    wait(5)
+    discordMsg.Visible = false
 end)
 
 -- Anti-AFK Script
