@@ -525,10 +525,16 @@ end)
 setupDoubleJump()
 
 UserInputService.InputBegan:Connect(function(input, isProcessed)
-	if isProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-	if input.KeyCode == Enum.KeyCode.Space then
-		local humanoid = getHumanoid()
-		if humanoid:GetState() == Enum.HumanoidStateType.Freefall and canDoubleJump and not hasDoubleJumped then
+	if isProcessed then return end
+
+	local humanoid = getHumanoid()
+	local isAirborne = humanoid:GetState() == Enum.HumanoidStateType.Freefall
+
+	if isAirborne and canDoubleJump and not hasDoubleJumped then
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
+			hasDoubleJumped = true
+			doDoubleJump()
+		elseif input.UserInputType == Enum.UserInputType.Touch then
 			hasDoubleJumped = true
 			doDoubleJump()
 		end
