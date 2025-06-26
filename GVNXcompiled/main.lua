@@ -487,77 +487,69 @@ local frontFlipAnim = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Ani
 
 local canDoubleJump = false
 local hasDoubleJumped = false
-local lastJumpTime = 0
-
-_G.DoubleJump = true
+local awaitingLand = false
+local jumpPressed = false -- NOVA FLAG
 
 local function getHumanoid()
-	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-	return char:WaitForChild("Humanoid")
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return char:WaitForChild("Humanoid")
 end
 
 local function doDoubleJump()
-	if not _G.DoubleJump then return end
-
-	local humanoid = getHumanoid()
-	if humanoid then
-		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-
-		local animator = humanoid:FindFirstChildOfClass("Animator")
-		if animator and frontFlipAnim then
-			local track = animator:LoadAnimation(frontFlipAnim)
-			track:Play()
-		end
-	end
+    if not _G.DoubleJump then return end
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        local animator = humanoid:FindFirstChildOfClass("Animator")
+        if animator and frontFlipAnim then
+            local track = animator:LoadAnimation(frontFlipAnim)
+            track:Play()
+        end
+    end
 end
 
 local function setupDoubleJump()
-	local humanoid = getHumanoid()
-
-	-- Estado do personagem (no chão ou no ar)
-	humanoid.StateChanged:Connect(function(_, newState)
-		if newState == Enum.HumanoidStateType.Freefall then
-			canDoubleJump = true
-		elseif newState == Enum.HumanoidStateType.Landed then
-			canDoubleJump = false
-			hasDoubleJumped = false
-			lastJumpTime = tick()
-		end
-	end)
-
-	-- Suporte MOBILE: detecta pulo manual mesmo que não tenha evento de toque
-	humanoid.Jumping:Connect(function(isJumping)
-		if isJumping and canDoubleJump and not hasDoubleJumped then
-			if tick() - lastJumpTime > 0.2 then
-				hasDoubleJumped = true
-				doDoubleJump()
-			end
-		end
-	end)
+    local humanoid = getHumanoid()
+    humanoid.StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Landed then
+            canDoubleJump = false
+            hasDoubleJumped = false
+            awaitingLand = false
+            jumpPressed = false -- RESET ao aterrissar
+        elseif newState == Enum.HumanoidStateType.Freefall and not awaitingLand then
+            canDoubleJump = true
+            hasDoubleJumped = false
+        end
+    end)
 end
 
--- Inicializa quando o personagem renasce
 LocalPlayer.CharacterAdded:Connect(function()
-	task.wait(1)
-	setupDoubleJump()
+    task.wait(1)
+    setupDoubleJump()
 end)
 
--- Inicial
 setupDoubleJump()
 
--- Suporte PC (teclado / gamepad)
-UserInputService.InputBegan:Connect(function(input, isProcessed)
-	if isProcessed then return end
+-- EDGE DETECTION: só permite double jump com novo clique/toque
+UserInputService.JumpRequest:Connect(function()
+    local humanoid = getHumanoid()
+    if not jumpPressed then
+        jumpPressed = true
+        if canDoubleJump and not hasDoubleJumped and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+            hasDoubleJumped = true
+            canDoubleJump = false
+            awaitingLand = true
+            doDoubleJump()
+        end
+    end
+end)
 
-	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
-		local humanoid = getHumanoid()
-		if humanoid:GetState() == Enum.HumanoidStateType.Freefall and canDoubleJump and not hasDoubleJumped then
-			if tick() - lastJumpTime > 0.2 then
-				hasDoubleJumped = true
-				doDoubleJump()
-			end
-		end
-	end
+UserInputService.InputEnded:Connect(function(input, processed)
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
+        jumpPressed = false
+    elseif input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.Gamepad1 then
+        jumpPressed = false
+    end
 end)
 
 
