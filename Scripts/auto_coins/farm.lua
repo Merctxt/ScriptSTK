@@ -106,10 +106,18 @@ local function buscarLootsOrdenados()
     return loots
 end
 
+local function contarLootsColetados()
+    local count = 0
+    for _, _ in pairs(lootsColetados) do
+        count = count + 1
+    end
+    return count
+end
+
 -- Loop de coleta com controle da GUI
 task.spawn(function()
     while true do
-        if ativo and (table.getn(lootsColetados) < 10) then
+        if ativo and (contarLootsColetados() < 10) then
             local character = player.Character or player.CharacterAdded:Wait()
             local hrp = character:FindFirstChild("HumanoidRootPart")
 
