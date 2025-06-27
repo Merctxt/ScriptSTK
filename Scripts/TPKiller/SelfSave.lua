@@ -105,17 +105,32 @@ local function fugirDoKillerLoop()
     if fugindo then return end
     fugindo = true
     task.spawn(function()
+        local lootsVisitados = {}
         while ativo and player:GetAttribute("InKillerProximity") == true do
-            local loot = getNearestLoot()
-            if loot then
-                local character = player.Character or player.CharacterAdded:Wait()
-                local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.CFrame = loot.objeto.CFrame + Vector3.new(0, 3, 0)
-                    print("✔️ Fugiu para loot:", loot.nome)
+            local character = player.Character or player.CharacterAdded:Wait()
+            local hrp = character and character:FindFirstChild("HumanoidRootPart")
+            if not hrp then break end
+            -- Buscar loots ainda não visitados neste ciclo
+            local loots = buscarLootsDisponiveis()
+            local nearest, minDist = nil, math.huge
+            for _, loot in ipairs(loots) do
+                if not lootsVisitados[loot.id] then
+                    local dist = (loot.objeto.Position - hrp.Position).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        nearest = loot
+                    end
                 end
+            end
+            if nearest then
+                lootsVisitados[nearest.id] = true
+                -- Pequeno deslocamento aleatório para não ficar "preso" no mesmo loot
+                local offset = Vector3.new(math.random(-2,2), 3, math.random(-2,2))
+                hrp.CFrame = nearest.objeto.CFrame + offset
+                print("✔️ Fugiu para loot:", nearest.nome)
             else
-                warn("❌ Nenhum loot disponível para fugir!")
+                -- Se todos já foram visitados, reseta e tenta de novo
+                lootsVisitados = {}
             end
             task.wait(0.2)
         end
