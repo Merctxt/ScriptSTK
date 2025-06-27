@@ -10,6 +10,8 @@ local frontFlipAnim = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Ani
 local doubleJumpEnabled = true
 local canDoubleJump = false
 local hasDoubleJumped = false
+local awaitingLand = false
+local jumpPressed = false -- NOVA FLAG
 
 -- GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
@@ -67,10 +69,13 @@ local function setupDoubleJump()
 	local humanoid = getHumanoid()
 
 	humanoid.StateChanged:Connect(function(_, newState)
-		if newState == Enum.HumanoidStateType.Freefall then
-			canDoubleJump = true
-		elseif newState == Enum.HumanoidStateType.Landed then
+		if newState == Enum.HumanoidStateType.Landed then
 			canDoubleJump = false
+			hasDoubleJumped = false
+			awaitingLand = false
+			jumpPressed = false -- RESET ao aterrissar
+		elseif newState == Enum.HumanoidStateType.Freefall and not awaitingLand then
+			canDoubleJump = true
 			hasDoubleJumped = false
 		end
 	end)
@@ -86,13 +91,23 @@ end)
 setupDoubleJump()
 
 -- Entrada do teclado para acionar o segundo pulo
-UserInputService.InputBegan:Connect(function(input, isProcessed)
-	if isProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-	if input.KeyCode == Enum.KeyCode.Space then
-		local humanoid = getHumanoid()
-		if humanoid:GetState() == Enum.HumanoidStateType.Freefall and canDoubleJump and not hasDoubleJumped then
+UserInputService.JumpRequest:Connect(function()
+	local humanoid = getHumanoid()
+	if not jumpPressed then
+		jumpPressed = true
+		if canDoubleJump and not hasDoubleJumped and humanoid:GetState() == Enum.HumanoidStateType.Freefall then
 			hasDoubleJumped = true
+			canDoubleJump = false
+			awaitingLand = true
 			doDoubleJump()
 		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input, processed)
+	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
+		jumpPressed = false
+	elseif input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.Gamepad1 then
+		jumpPressed = false
 	end
 end)
