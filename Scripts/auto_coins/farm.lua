@@ -109,7 +109,7 @@ end
 -- Loop de coleta com controle da GUI
 task.spawn(function()
     while true do
-        if ativo then
+        if ativo and (table.getn(lootsColetados) < 10) then
             local character = player.Character or player.CharacterAdded:Wait()
             local hrp = character:FindFirstChild("HumanoidRootPart")
 
