@@ -123,6 +123,7 @@ task.spawn(function()
                         fireproximityprompt(alvo.prompt)
                         print("✅ Coletado:", alvo.nome, "- Valor:", alvo.valor)
                         lootsColetados[alvo.id] = true
+                        task.wait(1) -- Cooldown de 1 segundo após coletar
                         break
                     end
                 end
