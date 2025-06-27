@@ -132,7 +132,7 @@ local function fugirDoKillerLoop()
                 -- Se todos já foram visitados, reseta e tenta de novo
                 lootsVisitados = {}
             end
-            task.wait(0.2)
+            task.wait(1) -- cooldown de 1s entre cada TP
         end
         fugindo = false
     end)
