@@ -60,27 +60,6 @@ All features are toggleable via a unified, modern GUI inspired by the best Roblo
 
 ---
 
-<div align="left">
-
-## Usage
-
-1. **Requirements:**
-   - Roblox exploit/executor with Lua support (e.g., Synapse X, KRNL, Fluxus, etc.)
-   - The script file (`main.lua`) from this repository.
-
-2. **How to Use:**
-   - Inject the script into Roblox while playing Survival the Killer.
-   - The GUI will appear automatically. Use the toggles to enable/disable features as desired.
-   - All features are independent and can be used in any combination.
-
-3. **Coming Soon:**
-   - Public loadstring for one-line execution.
-   - More customization and new features based on community feedback.
-
-</div>
-
----
-
 <div align="center">
 
 ## Development Status
