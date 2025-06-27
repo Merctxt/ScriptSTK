@@ -3,11 +3,11 @@
 # STK Unified Script
 
 **Project Type:** Roblox Lua Exploit Script  
-**Target Game:** Survival the Killer
+**Game:** Survival the Killer on Roblox
 
 </div>
 
----
+
 
 <div align="center">
 
@@ -15,11 +15,10 @@
 
 STK Unified Script is a professional, all-in-one Lua script designed for the Roblox game **Survival the Killer**. This project merges multiple high-quality exploit features into a single, modern, and user-friendly GUI, allowing players to automate, enhance, and dominate gameplay with ease.
 
-> **Note:** This script is currently in development. A public loadstring will be released soon for easy usage. Stay tuned for updates!
 
 </div>
 
----
+
 
 <div align="left">
 
@@ -44,7 +43,6 @@ All features are toggleable via a unified, modern GUI inspired by the best Roblo
 
 </div>
 
----
 
 <div align="left">
 
@@ -58,20 +56,7 @@ All features are toggleable via a unified, modern GUI inspired by the best Roblo
 
 </div>
 
----
 
-<div align="center">
-
-## Development Status
-
-- The script is under active development.
-- All code is written 100% in Lua for maximum compatibility and performance.
-- The GUI and all features are being tested for stability and usability.
-- Feedback and suggestions are welcome!
-
-</div>
-
----
 
 <div align="center">
 
