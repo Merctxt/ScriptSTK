@@ -22,7 +22,7 @@ local TitleText = Instance.new("TextLabel", TitleBar)
 TitleText.Size = UDim2.new(1, -60, 1, 0)
 TitleText.Position = UDim2.new(0, 10, 0, 0)
 TitleText.BackgroundTransparency = 1
-TitleText.Text = "GVNX Survival the Killer - Exploit v1.0"
+TitleText.Text = "GVNX Survival the Killer - Exploit v1.2"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextSize = 16
 TitleText.Font = Enum.Font.GothamBold
@@ -64,7 +64,8 @@ local toggles = {
     {var = "AutoLoot", label = "Auto Loot", color = Color3.fromRGB(150, 50, 150)},
     {var = "AutoExit", label = "Auto Exit", color = Color3.fromRGB(50, 50, 150)},
     {var = "AutoSave", label = "Auto Save", color = Color3.fromRGB(150, 150, 50)},
-    {var = "DoubleJump", label = "Double Jump", color = Color3.fromRGB(50, 150, 150)}
+    {var = "DoubleJump", label = "Double Jump", color = Color3.fromRGB(50, 150, 150)},
+    {var = "TPKiller", label = "TP Killer(lag may occur)", color = Color3.fromRGB(200, 50, 50)}
 }
 
 _G.AntiAFK = false
@@ -72,6 +73,7 @@ _G.AutoLoot = false
 _G.AutoExit = false
 _G.AutoSave = false
 _G.DoubleJump = false
+_G.TPKiller = false
 
 local mainSpacer = Instance.new("TextLabel", ContentFrame)
 mainSpacer.Size = UDim2.new(1, 0, 0, 28)
@@ -253,6 +255,12 @@ local valoresloots = {
 
 local lootsColetados = {}
 
+-- Reseta lootsColetados ao respawnar ou iniciar nova partida
+player.CharacterAdded:Connect(function()
+    table.clear(lootsColetados)
+    print("[AutoLoot] lootsColetados resetado!")
+end)
+
 local function encontrarMapa()
     for _, obj in ipairs(Workspace:GetChildren()) do
         if obj:FindFirstChild("LootSpawns") then
@@ -293,9 +301,17 @@ local function buscarLootsOrdenados()
     return loots
 end
 
+local function contarLootsColetados()
+    local count = 0
+    for _, _ in pairs(lootsColetados) do
+        count = count + 1
+    end
+    return count
+end
+
 task.spawn(function()
     while true do
-        if _G.AutoLoot then
+        if _G.AutoLoot and (contarLootsColetados() < 10) then
             local character = player.Character or player.CharacterAdded:Wait()
             local hrp = character:FindFirstChild("HumanoidRootPart")
             if hrp then
@@ -307,6 +323,7 @@ task.spawn(function()
                         fireproximityprompt(alvo.prompt)
                         print("✅ Coletado:", alvo.nome, "- Valor:", alvo.valor)
                         lootsColetados[alvo.id] = true
+                        task.wait(1) -- Cooldown de 1 segundo após coletar, antes do break
                         break
                     end
                 end
@@ -722,5 +739,119 @@ task.spawn(function()
     while true do
         task.wait(2)
         updateLootESP()
+    end
+end)
+
+-- TP KILLER LOGIC (integrado ao GUI)
+local player = game:GetService("Players").LocalPlayer
+local Workspace = game:GetService("Workspace")
+local fugindo = false
+
+local valoresloots = {
+    old_slycer = 1000,
+    treasure_chest = 200,
+    gold_bars = 40,
+    pendant = 40,
+    apocalypse_helmet = 20,
+    golden_compass = 20,
+    golden_pocket_watch = 20,
+    trophy = 7,
+    welding_goggles = 7,
+    laptop = 7,
+    smartphone = 7,
+    smartwatch = 7,
+    binoculars = 7,
+    pickaxe = 5,
+    car_engine = 5,
+    busted_boombox = 5,
+    tire = 5,
+    rusty_pipe = 5,
+    rusty_cleaver = 5,
+    shattered_bottle = 2,
+    shattered_shades = 2,
+    green_bottle = 2,
+    gas_can = 2,
+    lighter = 2,
+    broken_bulb = 2,
+    broken_bottle = 2,
+    rusty_lantern = 2,
+}
+
+local lootsColetados = {}
+
+local function encontrarMapa()
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if obj:FindFirstChild("LootSpawns") then
+            return obj
+        end
+    end
+    return nil
+end
+
+local function buscarLootsDisponiveis()
+    local mapa = encontrarMapa()
+    if not mapa then return {} end
+    local lootSpawns = mapa:FindFirstChild("LootSpawns")
+    if not lootSpawns then return {} end
+    local loots = {}
+    for _, loot in ipairs(lootSpawns:GetChildren()) do
+        if not lootsColetados[loot.Name] then
+            local lootName = loot:GetAttribute("Loot")
+            if lootName then
+                local valor = valoresloots[lootName] or 0
+                local proxBlock = loot:FindFirstChild("LootProxBlock")
+                local prompt = proxBlock and proxBlock:FindFirstChild("LootProximityPrompt")
+                if prompt and prompt.Enabled then
+                    table.insert(loots, {
+                        objeto = loot,
+                        prompt = prompt,
+                        valor = valor,
+                        nome = lootName,
+                        id = loot.Name
+                    })
+                end
+            end
+        end
+    end
+    return loots
+end
+
+local function fugirDoKillerLoop()
+    if fugindo then return end
+    fugindo = true
+    task.spawn(function()
+        local lootsVisitados = {}
+        while _G.TPKiller and player:GetAttribute("InKillerProximity") == true do
+            local character = player.Character or player.CharacterAdded:Wait()
+            local hrp = character and character:FindFirstChild("HumanoidRootPart")
+            if not hrp then break end
+            local loots = buscarLootsDisponiveis()
+            local nearest, minDist = nil, math.huge
+            for _, loot in ipairs(loots) do
+                if not lootsVisitados[loot.id] then
+                    local dist = (loot.objeto.Position - hrp.Position).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        nearest = loot
+                    end
+                end
+            end
+            if nearest then
+                lootsVisitados[nearest.id] = true
+                local offset = Vector3.new(math.random(-2,2), 3, math.random(-2,2))
+                hrp.CFrame = nearest.objeto.CFrame + offset
+                print("✔️ Fugiu para loot:", nearest.nome)
+            else
+                lootsVisitados = {}
+            end
+            task.wait(1)
+        end
+        fugindo = false
+    end)
+end
+
+player:GetAttributeChangedSignal("InKillerProximity"):Connect(function()
+    if _G.TPKiller and player:GetAttribute("InKillerProximity") == true then
+        fugirDoKillerLoop()
     end
 end)
