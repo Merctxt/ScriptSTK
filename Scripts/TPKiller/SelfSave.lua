@@ -2,6 +2,7 @@ local player = game.Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local ativo = false
 local cooldown = false
+local fugindo = false -- flag para evitar múltiplos loops
 
 -- GUI
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -100,23 +101,32 @@ local function getNearestLoot()
     return nearest
 end
 
+local function fugirDoKillerLoop()
+    if fugindo then return end
+    fugindo = true
+    task.spawn(function()
+        while ativo and player:GetAttribute("InKillerProximity") == true do
+            local loot = getNearestLoot()
+            if loot then
+                local character = player.Character or player.CharacterAdded:Wait()
+                local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = loot.objeto.CFrame + Vector3.new(0, 3, 0)
+                    print("✔️ Fugiu para loot:", loot.nome)
+                end
+            else
+                warn("❌ Nenhum loot disponível para fugir!")
+            end
+            task.wait(0.2)
+        end
+        fugindo = false
+    end)
+end
+
 -- Evento de proximidade do killer
 player:GetAttributeChangedSignal("InKillerProximity"):Connect(function()
-    if not ativo or cooldown then return end
-    if player:GetAttribute("InKillerProximity") == true then
-        cooldown = true
-        local loot = getNearestLoot()
-        if loot then
-            local character = player.Character or player.CharacterAdded:Wait()
-            local hrp = character and character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                hrp.CFrame = loot.objeto.CFrame + Vector3.new(0, 3, 0)
-                print("✔️ Fugiu para loot:", loot.nome)
-            end
-        else
-            warn("❌ Nenhum loot disponível para fugir!")
-        end
-        task.delay(5, function() cooldown = false end)
+    if ativo and player:GetAttribute("InKillerProximity") == true then
+        fugirDoKillerLoop()
     end
 end)
 
