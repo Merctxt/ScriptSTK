@@ -28,8 +28,7 @@ local valoresloots = {
 -- [🔍 Verifica se o servidor está no lobby]
 local function isLobbyServer()
     for _, plr in ipairs(Players:GetPlayers()) do
-        local team = plr:GetAttribute("Team")
-        if not team or tostring(team):lower() ~= "lobby" then
+        if not plr.Team or plr.Team.Name ~= "Lobby" then
             return false
         end
     end
@@ -131,9 +130,9 @@ spawn(function()
             task.wait(12)
         else
             print("[Auto] Lobby encontrado, aguardando partida...")
-            repeat task.wait(1) until player:GetAttribute("Team") ~= "Lobby" or not automacaoAtiva
+            repeat task.wait(1) until not player.Team or player.Team.Name ~= "Lobby" or not automacaoAtiva
 
-            if automacaoAtiva and player:GetAttribute("Team") == "Survivor" then
+            if automacaoAtiva and player.Team and player.Team.Name == "Survivor" then
                 print("[Auto] Partida começou como Survivor, executando farm.")
                 executarFarm()
                 hopToNextServer()
