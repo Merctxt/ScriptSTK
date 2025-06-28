@@ -119,8 +119,14 @@ local function executarFarm()
     end
 
     if coletados > 0 then
-        player.Character:BreakJoints()
-        print("[Auto] Reset feito, voltando ao lobby.")
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.Health = 0 -- Matar o personagem para resetar
+            print("[Auto] Reset feito, voltando ao lobby.")
+        else
+            print("[Auto] Humanoid não encontrado, não foi possível resetar.")
+        end
+
         task.wait(6)
         repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
         print("[Auto] Retorno ao lobby confirmado.")
