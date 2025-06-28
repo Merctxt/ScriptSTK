@@ -141,10 +141,18 @@ spawn(function()
         -- Verifica se estamos no lobby completo
         if not isLobbyServer() then
             print("[Auto] Não está no lobby, pulando servidor...")
+            task.wait(15)
             hopToNextServer()
             task.wait(12)
         else
             print("[Auto] Lobby encontrado, aguardando partida...")
+            
+            local settings = player:FindFirstChild("Settings")
+            if settings then
+                settings:SetAttribute("be_the_killer", false) -- Garante que não seja o killer
+                print("[Auto] Desativado 'be_the_killer'.")
+            end
+
             local tempoEsperando = 0
             local timeoutMaximo = 60 -- Tempo máximo de espera em segundos
 
@@ -153,6 +161,7 @@ spawn(function()
                 tempoEsperando += 1
                 if tempoEsperando >= timeoutMaximo then
                     print("[Auto] Timeout atingido, pulando servidor...")
+                    task.wait(3)
                     hopToNextServer()
                     task.wait(10)
                     break
@@ -161,12 +170,14 @@ spawn(function()
 
             if automacaoAtiva and player.Team and player.Team.Name == "Survivor" then
                 print("[Auto] Partida começou como Survivor, executando farm.")
+                task.wait(10) -- Pequena pausa para garantir que o jogo esteja pronto
                 executarFarm()
                 task.wait(10)
                 hopToNextServer()
                 task.wait(10)
             else
                 print("[Auto] Não é Survivor, ignorando partida.")
+                task.wait(10)
                 hopToNextServer()
                 task.wait(10)
             end
