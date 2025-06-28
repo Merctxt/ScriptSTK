@@ -135,51 +135,67 @@ local function executarFarm()
     end  
 end
 
--- [🧠 LOOP Principal]
 spawn(function()
-    task.wait(10) -- Espera inicial para garantir que tudo esteja carregado
     while automacaoAtiva do
-        -- Verifica se estamos no lobby completo
-        if not isLobbyServer() then
-            print("[Auto] Não está no lobby, pulando servidor...")
+        task.wait(10) -- Aguarda carregamento completo
+
+        local players = Players:GetPlayers()
+        if #players <= 1 or not isLobbyServer() then
+            print("[Auto] Servidor inválido (não é lobby ou só você). Pulando...")
             hopToNextServer()
-            task.wait(12)
+            task.wait(15)
         else
-            print("[Auto] Lobby encontrado, aguardando partida...")
-            
+            print("[Auto] Lobby encontrado com múltiplos jogadores. Aguardando partida...")
+
+            -- [👹 Desativa Killer]
             local settings = player:FindFirstChild("Settings")
             if settings then
-                settings:SetAttribute("be_the_killer", false) -- Garante que não seja o killer
-                print("[Auto] Desativado 'be_the_killer'.")
+                settings:SetAttribute("be_the_killer", false)
+                print("[Auto] 'be_the_killer' desativado.")
             end
 
             local tempoEsperando = 0
-            local timeoutMaximo = 60 -- Tempo máximo de espera em segundos
+            local timeoutMaximo = 60
 
-            while player.Team and player.Team.Name == "Lobby" and automacaoAtiva do
+            while automacaoAtiva and player.Team and player.Team.Name == "Lobby" do
                 task.wait(1)
                 tempoEsperando += 1
                 if tempoEsperando >= timeoutMaximo then
-                    print("[Auto] Timeout atingido, pulando servidor...")
-                    task.wait(3)
+                    print("[Auto] Timeout: players provavelmente AFK. Pulando servidor...")
                     hopToNextServer()
-                    task.wait(10)
+                    task.wait(15)
                     break
                 end
             end
 
-            if automacaoAtiva and player.Team and player.Team.Name == "Survivor" then
-                print("[Auto] Partida começou como Survivor, executando farm.")
-                task.wait(10) -- Pequena pausa para garantir que o jogo esteja pronto
-                executarFarm()
-                task.wait(10)
-                hopToNextServer()
-                task.wait(10)
-            else
-                print("[Auto] Não é Survivor, ignorando partida.")
-                task.wait(10)
-                hopToNextServer()
-                task.wait(10)
+            -- [🎮 Partida começou]
+            if automacaoAtiva and player.Team then
+                local teamName = player.Team.Name
+                if teamName == "Survivor" then
+                    print("[Auto] Você é Survivor. Executando farm...")
+                    task.wait(5)
+                    executarFarm()
+                    task.wait(10)
+                    hopToNextServer()
+                    task.wait(15)
+                elseif teamName == "Killer" then
+                    print("[Auto] Você virou Killer. Resetando para próxima rodada.")
+                    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid.Health = 0
+                        task.wait(6)
+                        repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
+                        print("[Auto] Retorno ao lobby confirmado.")
+                    else
+                        print("[Auto] Não foi possível resetar (Humanoid ausente).")
+                        hopToNextServer()
+                        task.wait(15)
+                    end
+                else
+                    print("[Auto] Time indefinido. Pulando servidor.")
+                    hopToNextServer()
+                    task.wait(15)
+                end
             end
         end
     end
