@@ -28,7 +28,8 @@ local valoresloots = {
 -- [🔍 Verifica se o servidor está no lobby]
 local function isLobbyServer()
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr:GetAttribute("Team") ~= "Lobby" then
+        local team = plr:GetAttribute("Team")
+        if not team or tostring(team):lower() ~= "lobby" then
             return false
         end
     end
