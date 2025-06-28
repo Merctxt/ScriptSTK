@@ -1,17 +1,10 @@
--- Script de automação total para STK
--- Tudo em um único arquivo!
-
--- Serviços Roblox
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
+local player = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
--- =====================
--- Funções de Player.lua
--- =====================
 local triedServers = {}
 
 local function isLobbyServer()
@@ -39,37 +32,23 @@ local function hopToNextServer()
         local players = srv.playing
         if not triedServers[id] and players > 0 and players < srv.maxPlayers then
             triedServers[id] = true
-            print("[tobi] Tentando servidor:", id)
-            TeleportService:TeleportToPlaceInstance(PlaceId, id, LocalPlayer)
+            print("Tentando servidor:", id)
+            TeleportService:TeleportToPlaceInstance(PlaceId, id, player)
             return true
         end
     end
     return false
 end
 
--- Aguarda todos os jogadores ficarem no lobby
 local function aguardarLobby()
     while not isLobbyServer() do
-        print("[tobi] Não está no lobby, fazendo hoop...")
+        print("[Auto] Não está no lobby, fazendo hop...")
         hopToNextServer()
         wait(10)
     end
-    print("[tobi] Servidor no lobby!")
+    print("[Auto] Servidor no lobby!")
 end
 
--- Aguarda início da partida (status Survivor)
-local function aguardarPartida()
-    print("[tobi] Aguardando início da partida...")
-    while LocalPlayer:GetAttribute("Team") == "Lobby" do
-        wait(1)
-    end
-    print("[tobi] Partida começou!")
-end
-
--- =====================
--- Funções de Loot.lua
--- =====================
-local ativo = false
 local valoresloots = {
     old_slycer = 1000,
     treasure_chest = 200,
@@ -99,7 +78,6 @@ local valoresloots = {
     broken_bottle = 2,
     rusty_lantern = 2,
 }
-
 local lootsColetados = {}
 
 local function encontrarMapa()
@@ -142,50 +120,81 @@ local function buscarLootsOrdenados()
     return loots
 end
 
-local function contarLootsColetados()
-    local count = 0
-    for _, _ in pairs(lootsColetados) do
-        count = count + 1
-    end
-    return count
-end
+-- GUI de controle
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.ResetOnSpawn = false
+gui.Name = "AutoFarmGUI"
 
-local function autoLoot()
-    ativo = true
-    print("[tobi] AutoLoot ativado!")
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local loots = buscarLootsOrdenados()
-    for _, alvo in ipairs(loots) do
-        if not lootsColetados[alvo.id] and alvo.prompt and alvo.prompt.Enabled then
-            hrp.CFrame = alvo.objeto.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.15)
-            fireproximityprompt(alvo.prompt)
-            print("[tobi] Coletado:", alvo.nome, "- Valor:", alvo.valor)
-            lootsColetados[alvo.id] = true
-            task.wait(1)
+local botao = Instance.new("TextButton")
+botao.Size = UDim2.new(0, 140, 0, 40)
+botao.Position = UDim2.new(0, 20, 0, 100)
+botao.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+botao.TextColor3 = Color3.fromRGB(255, 255, 255)
+botao.Text = "Automação: Ativa"
+botao.Font = Enum.Font.GothamBold
+botao.TextSize = 16
+botao.Parent = gui
+botao.BorderSizePixel = 0
+botao.BackgroundTransparency = 0.1
+
+local automacaoAtiva = true
+
+botao.MouseButton1Click:Connect(function()
+    automacaoAtiva = not automacaoAtiva
+    if automacaoAtiva then
+        botao.Text = "Automação: Ativa"
+        botao.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    else
+        botao.Text = "Automação: Pausada"
+        botao.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+    end
+end)
+
+-- LOOP PRINCIPAL
+spawn(function()
+    while true do
+        if not automacaoAtiva then
+            wait(1)
+        else
+            aguardarLobby()
+
+            while player:GetAttribute("Team") == "Lobby" and automacaoAtiva do
+                wait(1)
+            end
+
+            if not automacaoAtiva then
+                wait(1)
+            else
+                print("[Auto] Partida começou!")
+                local character = player.Character or player.CharacterAdded:Wait()
+                local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+                if hrp then
+                    local loots = buscarLootsOrdenados()
+                    for _, alvo in ipairs(loots) do
+                        if not automacaoAtiva then break end
+                        if not lootsColetados[alvo.id] and alvo.prompt and alvo.prompt.Enabled then
+                            hrp.CFrame = alvo.objeto.CFrame + Vector3.new(0, 3, 0)
+                            task.wait(0.15)
+                            fireproximityprompt(alvo.prompt)
+                            print("✅ Coletado:", alvo.nome, "- Valor:", alvo.valor)
+                            lootsColetados[alvo.id] = true
+                            task.wait(1)
+                        end
+                    end
+                end
+
+                if automacaoAtiva then
+                    if player.Character then
+                        player.Character:BreakJoints()
+                        print("[Auto] Reset realizado!")
+                    end
+                    wait(5)
+                    hopToNextServer()
+                    print("[Auto] Indo para próximo servidor...")
+                    wait(10)
+                end
+            end
         end
     end
-    ativo = false
-end
-
--- Faz auto reset (método simples)
-local function autoReset()
-    print("[tobi] Resetando personagem...")
-    LocalPlayer.Character:BreakJoints()
-end
-
--- =====================
--- Loop principal
--- =====================
-while true do
-    aguardarLobby()
-    aguardarPartida()
-    autoLoot()
-    wait(2) -- Pequeno delay pós-loot
-    autoReset()
-    wait(5) -- Aguarda voltar ao lobby
-    hopToNextServer()
-    wait(10)
-end
+end)
