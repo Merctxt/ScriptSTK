@@ -137,11 +137,11 @@ end
 
 -- [🧠 LOOP Principal]
 spawn(function()
+    task.wait(10) -- Espera inicial para garantir que tudo esteja carregado
     while automacaoAtiva do
         -- Verifica se estamos no lobby completo
         if not isLobbyServer() then
             print("[Auto] Não está no lobby, pulando servidor...")
-            task.wait(15)
             hopToNextServer()
             task.wait(12)
         else
