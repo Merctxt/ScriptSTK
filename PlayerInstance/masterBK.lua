@@ -145,12 +145,24 @@ spawn(function()
             task.wait(12)
         else
             print("[Auto] Lobby encontrado, aguardando partida...")
-            repeat task.wait(1) until not player.Team or player.Team.Name ~= "Lobby" or not automacaoAtiva
+            local tempoEsperando = 0
+            local timeoutMaximo = 60 -- Tempo máximo de espera em segundos
+
+            while player.Team and player.Team.Name == "Lobby" and automacaoAtiva do
+                task.wait(1)
+                tempoEsperando += 1
+                if tempoEsperando >= timeoutMaximo then
+                    print("[Auto] Timeout atingido, pulando servidor...")
+                    hopToNextServer()
+                    task.wait(10)
+                    break
+                end
+            end
 
             if automacaoAtiva and player.Team and player.Team.Name == "Survivor" then
                 print("[Auto] Partida começou como Survivor, executando farm.")
                 executarFarm()
-                task.wait(7)
+                task.wait(10)
                 hopToNextServer()
                 task.wait(10)
             else
