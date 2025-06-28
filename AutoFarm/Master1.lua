@@ -64,28 +64,37 @@ end
 local function executarFarm()
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:WaitForChild("HumanoidRootPart")
-
     local loots = buscarLootsOrdenados()
+    local maxColeta = 10 -- Limite de coletas por rodada
+    local coletados = 0
+
     for _, alvo in ipairs(loots) do
-        if not automacaoAtiva then break end
+        if not automacaoAtiva or coletados >= maxColeta then break end
         if not lootsColetados[alvo.id] and alvo.prompt and alvo.prompt.Enabled then
             hrp.CFrame = alvo.objeto.CFrame + Vector3.new(0, 3, 0)
             task.wait(0.2)
             fireproximityprompt(alvo.prompt)
             lootsColetados[alvo.id] = true
             print("✅ Coletado:", alvo.nome, "- Valor:", alvo.valor)
+            coletados += 1
             task.wait(0.8)
         end
     end
 
-    -- [🛑 Reset automático]
-    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.Health = 0
-        print("[Auto] Reset feito. Aguardando retorno ao lobby.")
-    end
+    if coletados > 0 then
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.Health = 0
+            print("[Auto] Reset feito. Aguardando retorno ao lobby.")
+        else
+            print("[Auto] Humanoid não encontrado, não foi possível resetar.")
+        end
 
-    task.wait(6)
+        task.wait(6)
+        repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"  
+    else
+        print("[Auto] Nenhum loot coletado nesta rodada.")    
+    end
 end
 
 -- [🌐 Verifica se servidor tem pelo menos 5 players]
