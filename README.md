@@ -1,6 +1,6 @@
 <div align="center">
 
-# STK Unified Script
+# STK Exploit Script
 
 **Project Type:** Roblox Lua Exploit Script  
 **Game:** Survival the Killer on Roblox
@@ -39,8 +39,6 @@ STK Unified Script is a professional, all-in-one Lua script designed for the Rob
   - Show Lives
   - Loot ESP (with rarity coloring)
 
-All features are toggleable via a unified, modern GUI inspired by the best Roblox UIs.
-
 </div>
 
 
@@ -78,13 +76,3 @@ This project is for educational and personal use only. Use at your own risk. The
 
 </div>
 
----
-
-<div align="center">
-
-## Credits
-
-- Scripted and maintained by: **Merctxt**
-- Special thanks to the Roblox exploit community for inspiration and feedback.
-
-</div>
