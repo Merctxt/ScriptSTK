@@ -61,12 +61,19 @@ local function buscarLootsOrdenados()
 end
 
 -- [🧹 Coleta os loots e reseta]
+-- [🕒 Início da contagem de tempo]
+local startTime = tick()
+local totalFarmed = 0
+local numeroRodadas = 0
+
+-- [🧹 Coleta os loots e reseta]
 local function executarFarm()
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:WaitForChild("HumanoidRootPart")
     local loots = buscarLootsOrdenados()
-    local maxColeta = 10 -- Limite de coletas por rodada
+    local maxColeta = 10
     local coletados = 0
+    local valorRodada = 0
 
     for _, alvo in ipairs(loots) do
         if not automacaoAtiva or coletados >= maxColeta then break end
@@ -75,27 +82,42 @@ local function executarFarm()
             task.wait(0.2)
             fireproximityprompt(alvo.prompt)
             lootsColetados[alvo.id] = true
-            print("✅ Coletado:", alvo.nome, "- Valor:", alvo.valor)
             coletados += 1
+            valorRodada += alvo.valor
+            print("✅ Coletado:", alvo.nome, "- Valor:", alvo.valor)
             task.wait(0.8)
         end
     end
 
     if coletados > 0 then
-        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.Health = 0
-            print("[Auto] Reset feito. Aguardando retorno ao lobby.")
-        else
-            print("[Auto] Humanoid não encontrado, não foi possível resetar.")
-        end
+        totalFarmed += valorRodada
+        numeroRodadas += 1
 
-        task.wait(6)
-        repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"  
+        local tempoTotal = tick() - startTime
+        local minutos = tempoTotal / 60
+        local eficiencia = totalFarmed / minutos
+        print("--------------------------------")
+        print(string.format("📊 Rodada #%d: Farmou %d moedas.", numeroRodadas, valorRodada))
+        print(string.format("💰 Total acumulado: %d moedas.", totalFarmed))
+        print(string.format("⏱️ Tempo decorrido: %.1f min | ⚙️ Eficiência: %.1f moedas/min", minutos, eficiencia))
+        print("--------------------------------")
     else
-        print("[Auto] Nenhum loot coletado nesta rodada.")    
+        print("[Auto] Nenhum loot coletado nesta rodada.")
     end
+
+    -- Reset
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Health = 0
+        print("[Auto] Reset feito. Aguardando retorno ao lobby.")
+    else
+        print("[Auto] Humanoid não encontrado.")
+    end
+
+    task.wait(6)
+    repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
 end
+
 
 -- [🌐 Verifica se servidor tem pelo menos 5 players]
 local function verificarServidorValido()
