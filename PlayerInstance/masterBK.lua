@@ -144,6 +144,7 @@ spawn(function()
             if automacaoAtiva and player.Team and player.Team.Name == "Survivor" then
                 print("[Auto] Partida começou como Survivor, executando farm.")
                 executarFarm()
+                task.wait(7)
                 hopToNextServer()
                 task.wait(10)
             else
