@@ -4,15 +4,19 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
+local VirtualUser = game:GetService("VirtualUser")
 
 repeat wait() until Players.LocalPlayer
 local player = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
--- [🔄 Controle de Loop]
-local triedServers = {}
+-- [🔁 Estado da Automação]
 local automacaoAtiva = true
 local lootsColetados = {}
+local startTime = tick()
+local totalFarmed = 0
+local numeroRodadas = 0
+local valorRodadaAtual = 0
 
 -- [💰 Tabela de valores dos loots]
 local valoresloots = {
@@ -25,123 +29,182 @@ local valoresloots = {
     broken_bottle = 2, rusty_lantern = 2
 }
 
--- [🔍 Verifica se o servidor está no lobby]
-local function isLobbyServer()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if not plr.Team or plr.Team.Name ~= "Lobby" then
-            return false
-        end
-    end
-    return true
-end
+-- [🖥️ HUD Inteligente + Arrastável]
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "FarmHUD"
+ScreenGui.ResetOnSpawn = false
 
--- [🌐 Lista de servidores públicos]
-local function getServerList()
-    local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
-    local success, res = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet(url))
-    end)
-    if not success or not res.data then return {} end
-    return res.data
-end
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 270, 0, 120)
+MainFrame.Position = UDim2.new(1, -280, 0, 20)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BackgroundTransparency = 0.3
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
 
--- [⏭️ Troca para outro servidor que esteja no lobby]
-local function hopToNextServer()
-    local servers = getServerList()
-    for _, srv in ipairs(servers) do
-        local id = srv.id
-        if not triedServers[id] and srv.playing < srv.maxPlayers then
-            triedServers[id] = true
-            print("[Auto] Tentando servidor:", id)
-            TeleportService:TeleportToPlaceInstance(PlaceId, id, player)
-            return true
-        end
-    end
-    return false
-end
+local TextLabel = Instance.new("TextLabel", MainFrame)
+TextLabel.Size = UDim2.new(1, -10, 1, -10)
+TextLabel.Position = UDim2.new(0, 5, 0, 5)
+TextLabel.BackgroundTransparency = 1
+TextLabel.TextColor3 = Color3.new(1, 1, 1)
+TextLabel.Font = Enum.Font.Code
+TextLabel.TextSize = 14
+TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+TextLabel.TextYAlignment = Enum.TextYAlignment.Top
+TextLabel.Text = "⏳ Carregando métricas..."
 
--- [🗺️ Encontra loot spawns no mapa]
+-- [⏱️ Atualizador HUD]
+task.spawn(function()
+	while true do
+		local tempo = tick() - startTime
+		local minutos = math.max(tempo / 60, 0.01)
+		local eficiencia = totalFarmed / minutos
+
+		TextLabel.Text = string.format(
+			"📊 Rodada: %d\n💸 Atual: %d moedas\n💰 Total: %d moedas\n⏱️ Tempo: %.1f min\n⚙️ Eficiência: %.1f moedas/min",
+			numeroRodadas,
+			valorRodadaAtual,
+			totalFarmed,
+			minutos,
+			eficiencia
+		)
+		task.wait(1)
+	end
+end)
+
+-- [📦 Buscar loots ordenados por valor]
 local function encontrarMapa()
-    for _, obj in ipairs(Workspace:GetChildren()) do
-        if obj:FindFirstChild("LootSpawns") then return obj end
-    end
-    return nil
+	for _, obj in ipairs(Workspace:GetChildren()) do
+		if obj:FindFirstChild("LootSpawns") then return obj end
+	end
+	return nil
 end
 
--- [📦 Busca e ordena os loots disponíveis]
 local function buscarLootsOrdenados()
-    local mapa = encontrarMapa()
-    if not mapa then return {} end
-    local lootSpawns = mapa:FindFirstChild("LootSpawns")
-    if not lootSpawns then return {} end
+	local mapa = encontrarMapa()
+	if not mapa then return {} end
+	local lootSpawns = mapa:FindFirstChild("LootSpawns")
+	if not lootSpawns then return {} end
 
-    local loots = {}
-    for _, loot in ipairs(lootSpawns:GetChildren()) do
-        local lootName = loot:GetAttribute("Loot")
-        if lootName and not lootsColetados[loot.Name] then
-            local valor = valoresloots[lootName] or 0
-            local prompt = loot:FindFirstChild("LootProxBlock") and loot.LootProxBlock:FindFirstChild("LootProximityPrompt")
-            if prompt and prompt.Enabled then
-                table.insert(loots, {
-                    objeto = loot,
-                    prompt = prompt,
-                    valor = valor,
-                    nome = lootName,
-                    id = loot.Name
-                })
-            end
-        end
-    end
+	local loots = {}
+	for _, loot in ipairs(lootSpawns:GetChildren()) do
+		local lootName = loot:GetAttribute("Loot")
+		if lootName and not lootsColetados[loot.Name] then
+			local valor = valoresloots[lootName] or 0
+			local prompt = loot:FindFirstChild("LootProxBlock") and loot.LootProxBlock:FindFirstChild("LootProximityPrompt")
+			if prompt and prompt.Enabled then
+				table.insert(loots, {
+					objeto = loot,
+					prompt = prompt,
+					valor = valor,
+					nome = lootName,
+					id = loot.Name
+				})
+			end
+		end
+	end
 
-    table.sort(loots, function(a, b) return a.valor > b.valor end)
-    return loots
+	table.sort(loots, function(a, b) return a.valor > b.valor end)
+	return loots
 end
 
--- [🏃‍♂️ Automação de coleta + reset]
+-- [🏃‍♂️ Executa o farm da rodada atual]
 local function executarFarm()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local hrp = character:WaitForChild("HumanoidRootPart")
+	local character = player.Character or player.CharacterAdded:Wait()
+	local hrp = character:WaitForChild("HumanoidRootPart")
+	local loots = buscarLootsOrdenados()
+	local maxColeta = 10
+	local coletados = 0
+	local valorRodada = 0
 
-    local loots = buscarLootsOrdenados()
-    for _, alvo in ipairs(loots) do
-        if not automacaoAtiva then break end
-        if not lootsColetados[alvo.id] and alvo.prompt and alvo.prompt.Enabled then
-            hrp.CFrame = alvo.objeto.CFrame + Vector3.new(0, 3, 0)
-            task.wait(0.2)
-            fireproximityprompt(alvo.prompt)
-            print("✅ Coletado:", alvo.nome, "- Valor:", alvo.valor)
-            lootsColetados[alvo.id] = true
-            task.wait(0.8)
-        end
-    end
+	for _, alvo in ipairs(loots) do
+		if not automacaoAtiva or coletados >= maxColeta then break end
+		if not lootsColetados[alvo.id] and alvo.prompt and alvo.prompt.Enabled then
+			hrp.CFrame = alvo.objeto.CFrame + Vector3.new(0, 3, 0)
+			task.wait(0.2)
+			fireproximityprompt(alvo.prompt)
+			lootsColetados[alvo.id] = true
+			coletados += 1
+			valorRodada += alvo.valor
+			print(string.format("✅ Coletado: %s - Valor: %d", alvo.nome, alvo.valor))
+			task.wait(0.8)
+		end
+	end
 
-    player.Character:BreakJoints()
-    print("[Auto] Reset feito, voltando ao lobby.")
-    task.wait(6)
+	if coletados > 0 then
+		valorRodadaAtual = valorRodada
+		totalFarmed += valorRodada
+		numeroRodadas += 1
+		print(string.format("[Auto] Rodada %d finalizada com %d moedas!", numeroRodadas, valorRodada))
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then humanoid.Health = 0 end
+		task.wait(6)
+		repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
+	else
+		print("[Auto] Nenhum loot coletado nesta rodada.")
+	end
 end
 
--- [🧠 LOOP Principal]
+-- [🧠 Loop principal da automação]
 spawn(function()
-    while automacaoAtiva do
-        -- Verifica se estamos no lobby completo
-        if not isLobbyServer() then
-            print("[Auto] Não está no lobby, pulando servidor...")
-            hopToNextServer()
-            task.wait(12)
-        else
-            print("[Auto] Lobby encontrado, aguardando partida...")
-            repeat task.wait(1) until not player.Team or player.Team.Name ~= "Lobby" or not automacaoAtiva
+	task.wait(10)
 
-            if automacaoAtiva and player.Team and player.Team.Name == "Survivor" then
-                print("[Auto] Partida começou como Survivor, executando farm.")
-                executarFarm()
-                hopToNextServer()
-                task.wait(10)
-            else
-                print("[Auto] Não é Survivor, ignorando partida.")
-                hopToNextServer()
-                task.wait(10)
-            end
-        end
-    end
+	if #Players:GetPlayers() < 5 then
+		print("[Auto] Servidor com poucos jogadores. Pulando...")
+		local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")).data
+		for _, srv in ipairs(servers) do
+			if srv.playing >= 5 and srv.playing < srv.maxPlayers then
+				TeleportService:TeleportToPlaceInstance(PlaceId, srv.id, player)
+				return
+			end
+		end
+	end
+
+	print("[Auto] Iniciando farm contínuo neste servidor.")
+
+	while automacaoAtiva do
+		local settings = player:FindFirstChild("Settings")
+		if settings then settings:SetAttribute("be_the_killer", false) end
+
+		repeat task.wait(1) until player.Team and player.Team.Name ~= "Lobby"
+		if not automacaoAtiva then break end
+
+		if player.Team.Name == "Survivor" then
+			print("[Auto] Você é Survivor. Executando farm...")
+			task.wait(10)
+			executarFarm()
+		elseif player.Team.Name == "Killer" then
+			print("[Auto] Você é Killer. Resetando...")
+			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid then humanoid.Health = 0 end
+			repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
+			task.wait(5)
+		end
+
+		lootsColetados = {}
+		print("[Auto] Aguardando próxima rodada...")
+		repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
+	end
+end)
+
+-- [🛡️ Anti-AFK integrado]
+player.Idled:Connect(function()
+	VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+	task.wait(0.1)
+	VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+end)
+
+-- Movimento leve periódico para evitar kick
+task.spawn(function()
+	while automacaoAtiva do
+		task.wait(45)
+		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local hrp = player.Character.HumanoidRootPart
+			local original = hrp.CFrame
+			hrp.CFrame = original * CFrame.new(0, 0, -1)
+			task.wait(0.3)
+			hrp.CFrame = original
+		end
+	end
 end)
