@@ -29,6 +29,14 @@ local valoresloots = {
     broken_bottle = 2, rusty_lantern = 2
 }
 
+local function formatK(n)
+	if n >= 1000 then
+		return string.format("%.1fk", n / 1000)
+	else
+		return tostring(n)
+	end
+end
+
 -- [📦 Dados locais que serão salvos]
 local data = {
     TotalGanho = 0,
@@ -200,6 +208,7 @@ local function executarFarm()
     task.wait(5) -- Espera um pouco para evitar problemas de sincronização
     if coletados > 0 then
         valorRodadaAtual = valorRodada
+        totalInstancia += valorRodada
         data.TotalGanho = data.TotalGanho + valorRodada
         numeroRodadas += 1
         salvarDados()
