@@ -61,7 +61,7 @@ STK Unified Script is a professional, all-in-one Lua script designed for the Rob
 > **You can use this exploit instantly with this loadstring:**
 >
 > ```lua
-> loadstring(game:HttpGet("https://pastebin.com/pK61kty3"))()
+> loadstring(game:HttpGet("https://pastebin.com/raw/T6HiexAL"))()
 > ```
 
 </div>
