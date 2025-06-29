@@ -58,7 +58,7 @@ STK Unified Script is a professional, all-in-one Lua script designed for the Rob
 
 ## GVNX Automation
 
-> **You can use this exploit instantly with this loadstring:**
+> **You can use this auto farm script instantly with this loadstring:**
 >
 > ```lua
 > loadstring(game:HttpGet("https://pastebin.com/raw/T6HiexAL"))()
