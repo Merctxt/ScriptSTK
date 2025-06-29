@@ -114,7 +114,7 @@ local function executarFarm()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local hrp = character:WaitForChild("HumanoidRootPart")
 	local loots = buscarLootsOrdenados()
-	local maxColeta = 10
+	local maxColeta = 8
 	local coletados = 0
 	local valorRodada = 0
 
@@ -128,10 +128,11 @@ local function executarFarm()
 			coletados += 1
 			valorRodada += alvo.valor
 			print(string.format("✅ Coletado: %s - Valor: %d", alvo.nome, alvo.valor))
-			task.wait(0.8)
+			task.wait(1)
 		end
 	end
 
+	task.wait(5) -- Espera um pouco para evitar problemas de sincronização
 	if coletados > 0 then
 		valorRodadaAtual = valorRodada
 		totalFarmed += valorRodada
