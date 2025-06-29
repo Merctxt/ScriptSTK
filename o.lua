@@ -136,8 +136,8 @@ task.spawn(function()
             numeroRodadas,
             valorRodadaAtual,
             totalInstancia,
-            data.TotalGanho / 1000,
-            data.monthlyGoal,
+            formatK(data.TotalGanho),
+            formatK(data.monthlyGoal),
             perc,
             minutos,
             eficiencia
