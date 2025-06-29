@@ -132,7 +132,7 @@ task.spawn(function()
         local perc = math.clamp((data.TotalGanho / data.monthlyGoal) * 100, 0, 9999)
 
         TextLabel.Text = string.format(
-            "📊 Rodada: %d\n💸 Atual: %d moedas\n💰 Total: %d moedas\n📅 Meta: %.2fk/%dk - 🚨%.2f%% da meta\n\n⏱️ Tempo: %.1f min\n⚙️ Eficiência: %.1f moedas/min",
+            "📊 Rodada: %d\n💸 Atual: %d moedas\n💰 Total: %d moedas\n📅 Meta: %s/%s - 🚨%.2f%% da meta\n\n⏱️ Tempo: %.1f min\n⚙️ Eficiência: %.1f moedas/min",
             numeroRodadas,
             valorRodadaAtual,
             totalInstancia,
