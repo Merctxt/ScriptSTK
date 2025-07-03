@@ -17,6 +17,7 @@ local startTime = tick()
 local numeroRodadas = 0
 local valorRodadaAtual = 0
 local totalInstancia = 0
+local coinsInicial = player:GetAttribute("Coins") or 0
 
 -- [💰 Tabela de valores dos loots]
 local valoresloots = {
@@ -40,8 +41,17 @@ end
 -- [📦 Dados locais que serão salvos]
 local data = {
     TotalGanho = 0,
-    monthlyGoal = 100000
+    monthlyGoal = 100000,
+    dailyGains = {}, -- novo campo para ganhos diários
 }
+
+local function getToday()
+    return os.date("%Y-%m-%d")
+end
+
+local function getDailyGoal()
+    return math.floor(data.monthlyGoal / 30)
+end
 
 -- [🛠 JSON local]
 local function salvarDados()
@@ -55,7 +65,13 @@ local function carregarDados()
         local ok, conteudo = pcall(function()
             return HttpService:JSONDecode(readfile("farm_data.json"))
         end)
-        if ok and type(conteudo) == "table" then data = conteudo end
+        if ok and type(conteudo) == "table" then
+            data = conteudo
+            -- Garante que dailyGains sempre exista
+            if type(data.dailyGains) ~= "table" then
+                data.dailyGains = {}
+            end
+        end
     end
 end
 
@@ -69,11 +85,28 @@ ScreenGui.ResetOnSpawn = false
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 300, 0, 160)
 MainFrame.Position = UDim2.new(1, -310, 0, 20)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BackgroundTransparency = 0.3
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- mais escuro
+MainFrame.BackgroundTransparency = 0.15 -- menos transparente
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+
+-- Arredondar cantos
+local corner = Instance.new("UICorner", MainFrame)
+corner.CornerRadius = UDim.new(0, 12)
+
+-- Botão de minimizar
+local minimizeButton = Instance.new("TextButton", MainFrame)
+minimizeButton.Size = UDim2.new(0, 28, 0, 28)
+minimizeButton.Position = UDim2.new(1, -32, 0, 4)
+minimizeButton.Text = "_"
+minimizeButton.TextColor3 = Color3.new(1,1,1)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+minimizeButton.BackgroundTransparency = 0.2
+minimizeButton.Font = Enum.Font.Code
+minimizeButton.TextSize = 20
+local minCorner = Instance.new("UICorner", minimizeButton)
+minCorner.CornerRadius = UDim.new(0, 8)
 
 local TextLabel = Instance.new("TextLabel", MainFrame)
 TextLabel.Size = UDim2.new(1, -10, 1, -60)
@@ -123,25 +156,59 @@ resetButton.MouseButton1Click:Connect(function()
     salvarDados()
 end)
 
+-- Novo campo para mostrar meta diária e ganhos do dia
+local dailyLabel = Instance.new("TextLabel", MainFrame)
+dailyLabel.Size = UDim2.new(1, -10, 0, 20)
+dailyLabel.Position = UDim2.new(0, 5, 1, -55)
+dailyLabel.BackgroundTransparency = 1
+dailyLabel.TextColor3 = Color3.new(1, 1, 1)
+dailyLabel.Font = Enum.Font.Code
+dailyLabel.TextSize = 14
+dailyLabel.TextXAlignment = Enum.TextXAlignment.Left
+dailyLabel.TextYAlignment = Enum.TextYAlignment.Top
+dailyLabel.Text = ""
+
+local minimized = false
+minimizeButton.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    for _, child in ipairs(MainFrame:GetChildren()) do
+        if child ~= minimizeButton and (child:IsA("TextLabel") or child:IsA("TextBox") or (child:IsA("TextButton") and child ~= minimizeButton)) then
+            child.Visible = not minimized
+        end
+    end
+    if minimized then
+        MainFrame.Size = UDim2.new(0, 60, 0, 36)
+    else
+        MainFrame.Size = UDim2.new(0, 300, 0, 160)
+    end
+end)
+
 -- [⏱️ Atualizador HUD]
+local function atualizarHUD()
+    local tempo = tick() - startTime
+    local minutos = math.max(tempo / 60, 0.01)
+    local eficiencia = totalInstancia / minutos
+    local perc = math.clamp((data.TotalGanho / data.monthlyGoal) * 100, 0, 9999)
+    local today = getToday()
+    local dailyGain = (type(data.dailyGains) == "table" and data.dailyGains[today]) or 0
+    local dailyGoal = getDailyGoal()
+    dailyLabel.Text = string.format("📆 Hoje: %s/%s", formatK(dailyGain), formatK(dailyGoal))
+    TextLabel.Text = string.format(
+        "📊 Rodada: %d\n💸 Atual: %d moedas\n💰 Total: %d moedas\n📅 Meta: %s/%s - 🚨%.2f%% da meta\n\n⏱️ Tempo: %.1f min\n⚙️ Eficiência: %.1f moedas/min",
+        numeroRodadas,
+        valorRodadaAtual,
+        totalInstancia,
+        formatK(data.TotalGanho),
+        formatK(data.monthlyGoal),
+        perc,
+        minutos,
+        eficiencia
+    )
+end
+
 task.spawn(function()
     while true do
-        local tempo = tick() - startTime
-        local minutos = math.max(tempo / 60, 0.01)
-        local eficiencia = totalInstancia / minutos
-        local perc = math.clamp((data.TotalGanho / data.monthlyGoal) * 100, 0, 9999)
-
-        TextLabel.Text = string.format(
-            "📊 Rodada: %d\n💸 Atual: %d moedas\n💰 Total: %d moedas\n📅 Meta: %s/%s - 🚨%.2f%% da meta\n\n⏱️ Tempo: %.1f min\n⚙️ Eficiência: %.1f moedas/min",
-            numeroRodadas,
-            valorRodadaAtual,
-            totalInstancia,
-            formatK(data.TotalGanho),
-            formatK(data.monthlyGoal),
-            perc,
-            minutos,
-            eficiencia
-        )
+        atualizarHUD()
         task.wait(1)
     end
 end)
@@ -187,9 +254,9 @@ local function executarFarm()
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:WaitForChild("HumanoidRootPart")
     local loots = buscarLootsOrdenados()
-    local maxColeta = 8
+    local maxColeta = 10
     local coletados = 0
-    local valorRodada = 0
+    local coinsAntes = player:GetAttribute("Coins") or 0
 
     for _, alvo in ipairs(loots) do
         if not automacaoAtiva or coletados >= maxColeta then break end
@@ -199,27 +266,35 @@ local function executarFarm()
             fireproximityprompt(alvo.prompt)
             lootsColetados[alvo.id] = true
             coletados += 1
-            valorRodada += alvo.valor
             print(string.format("✅ Coletado: %s - Valor: %d", alvo.nome, alvo.valor))
             task.wait(1)
         end
     end
 
-    task.wait(5) -- Espera um pouco para evitar problemas de sincronização
-    if coletados > 0 then
-        valorRodadaAtual = valorRodada
-        totalInstancia += valorRodada
-        data.TotalGanho = data.TotalGanho + valorRodada
+    task.wait(5)
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then humanoid.Health = 0 end
+    task.wait(6)
+    repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
+
+    -- Aguarda o jogador voltar ao lobby
+    task.wait(5)
+    local coinsDepois = player:GetAttribute("Coins") or coinsAntes
+    local ganhoReal = math.max(coinsDepois - coinsAntes, 0)
+    valorRodadaAtual = ganhoReal
+    totalInstancia = totalInstancia + ganhoReal
+    if coletados > 0 or ganhoReal > 0 then
+        data.TotalGanho = coinsDepois -- agora sempre igual ao valor atual de moedas
+        -- Atualiza ganho do dia
+        local today = getToday()
+        data.dailyGains[today] = (data.dailyGains[today] or 0) + ganhoReal
         numeroRodadas += 1
         salvarDados()
-        print(string.format("[Auto] Rodada %d finalizada com %d moedas!", numeroRodadas, valorRodada))
-        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then humanoid.Health = 0 end
-        task.wait(6)
-        repeat task.wait(1) until player.Team and player.Team.Name == "Lobby"
+        print(string.format("[Auto] Rodada %d finalizada com %d moedas! (Real)", numeroRodadas, ganhoReal))
     else
         print("[Auto] Nenhum loot coletado nesta rodada.")
     end
+    atualizarHUD()
 end
 
 -- [🧠 Loop principal da automação]
