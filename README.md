@@ -70,7 +70,7 @@ STK Unified Script is a professional, all-in-one Lua script designed for the Rob
 
 ## GVNX SkinDupper
 
-> **You can use this duper skin script instantly with this loadstring:**
+> **You can use this skin duper script instantly with this loadstring:**
 >
 > ```lua
 > loadstring(game:HttpGet("https://pastebin.com/raw/DreGjV8Y"))()
