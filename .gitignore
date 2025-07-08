@@ -3,3 +3,5 @@ CompiledTest
 AutoFarm/archived
 PlayerInstance
 SkinSwapper/Tests
+SkinSwapper/Tests/mainTest.lua
+SkinSwapper/Tests/compiledTest.lua
