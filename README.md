@@ -7,6 +7,7 @@
 
 </div>
 
+▶️ [Assista ao vídeo no YouTube](https://youtu.be/_v2Ia9JjIz0)
 
 
 <div align="center">
